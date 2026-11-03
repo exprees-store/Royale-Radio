@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1c44c6">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>راديو رويال</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@500;700&family=Readex+Pro:wght@300;400;600&display=swap">
+<style>
+/* Layout: a royal-blue broadcast console on top (now playing, play/stop, volume), then station buttons grouped by region in a wrapping grid. */
+:root {
+  --bg: #ffffff;
+  --surface: #eff3ff;
+  --fg: #0a1a52;
+  --muted: #4b5b93;
+  --line: #c9d5f6;
+  --royal: #1c44c6;
+  --royal-deep: #0b2182;
+  --on-royal: #ffffff;
+  --on-royal-soft: #c8d5ff;
+  --focus: #1c44c6;
+  --font-display: "Reem Kufi", "Segoe UI", Tahoma, sans-serif;
+  --font-body: "Readex Pro", "Segoe UI", Tahoma, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #06103a;
+    --surface: #0d1d63;
+    --fg: #ffffff;
+    --muted: #aebdf0;
+    --line: #25409a;
+    --royal: #3f6dff;
+    --royal-deep: #0b2182;
+    --focus: #ffffff;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #06103a;
+  --surface: #0d1d63;
+  --fg: #ffffff;
+  --muted: #aebdf0;
+  --line: #25409a;
+  --royal: #3f6dff;
+  --royal-deep: #0b2182;
+  --focus: #ffffff;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); line-height: 1.6; }
+.app {
+  max-width: 980px; margin: 0 auto;
+  padding-block: 20px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 28px;
+}
+button, a.st { font-family: inherit; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+
+/* console */
+.console {
+  background: linear-gradient(135deg, var(--royal-deep) 0%, var(--royal) 100%);
+  color: var(--on-royal);
+  border-radius: 20px;
+  padding: 24px;
+  display: grid; gap: 20px;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+.brand { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; letter-spacing: .02em; color: var(--on-royal-soft); }
+.now { font-family: var(--font-display); font-weight: 700; font-size: clamp(1.8rem, 6vw, 3rem); line-height: 1.2; margin: 4px 0 2px; text-wrap: balance; overflow-wrap: anywhere; }
+.status { color: var(--on-royal-soft); font-size: .95rem; min-height: 1.5em; }
+.status a { color: var(--on-royal); text-decoration: underline; }
+.eq { display: flex; align-items: flex-end; gap: 5px; height: 56px; }
+.eq i { display: block; width: 8px; height: 10px; background: var(--on-royal); border-radius: 2px; opacity: .55; transition: height .3s; }
+.console.playing .eq i { opacity: 1; animation: bounce 1s ease-in-out infinite; }
+.console.playing .eq i:nth-child(2) { animation-delay: -.7s; }
+.console.playing .eq i:nth-child(3) { animation-delay: -.4s; }
+.console.playing .eq i:nth-child(4) { animation-delay: -.2s; }
+.console.playing .eq i:nth-child(5) { animation-delay: -.9s; }
+@keyframes bounce { 0%,100% { height: 10px } 50% { height: 54px } }
+.controls { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 14px 20px; border-top: 1px solid rgba(255,255,255,.25); padding-top: 18px; }
+.ctl {
+  appearance: none; border: 0; cursor: pointer;
+  background: var(--on-royal); color: var(--royal-deep);
+  border-radius: 999px; height: 52px; padding: 0 22px;
+  display: inline-flex; align-items: center; gap: 10px;
+  font-weight: 600; font-size: 1rem;
+}
+.ctl.ghost { background: transparent; color: var(--on-royal); box-shadow: inset 0 0 0 2px rgba(255,255,255,.6); }
+.ctl:disabled { opacity: .5; cursor: not-allowed; }
+.ctl svg { width: 20px; height: 20px; fill: currentColor; }
+.vol { display: flex; align-items: center; gap: 10px; margin-inline-start: auto; min-width: 0; }
+.vol label { font-size: .9rem; color: var(--on-royal-soft); }
+.vol input { width: min(180px, 40vw); accent-color: #ffffff; }
+
+/* stations */
+.group { display: flex; flex-direction: column; gap: 12px; }
+.group h2 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; color: var(--royal); display: flex; align-items: center; gap: 12px; }
+.group h2::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
+.st {
+  appearance: none; cursor: pointer; text-decoration: none;
+  background: var(--surface); color: var(--fg);
+  border: 2px solid var(--line); border-radius: 14px;
+  padding: 14px 16px; min-height: 76px; min-width: 0;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  text-align: start; transition: background .15s, border-color .15s, color .15s;
+}
+.st:hover { border-color: var(--royal); }
+.st .nm { display: flex; flex-direction: column; min-width: 0; }
+.st .ar { font-weight: 600; font-size: 1.05rem; overflow-wrap: anywhere; }
+.st .lt { font-size: .8rem; color: var(--muted); direction: ltr; text-align: start; overflow-wrap: anywhere; }
+.st .ic { flex: none; width: 36px; height: 36px; border-radius: 50%; background: var(--royal); color: #fff; display: grid; place-items: center; }
+.st .ic svg { width: 16px; height: 16px; fill: currentColor; }
+.st[aria-pressed="true"] { background: var(--royal); border-color: var(--royal); color: #fff; }
+.st[aria-pressed="true"] .lt { color: var(--on-royal-soft); }
+.st[aria-pressed="true"] .ic { background: #fff; color: var(--royal); }
+.note { color: var(--muted); font-size: .85rem; margin: 0; }
+@media (max-width: 480px) {
+  .console { grid-template-columns: 1fr; padding: 18px; }
+  .eq { height: 36px; }
+  .vol { margin-inline-start: 0; width: 100%; }
+  .vol input { flex: 1; width: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .console.playing .eq i { animation: none; height: 30px; }
+}
+
+.install { background: var(--surface); border: 2px solid var(--line); border-radius: 14px; padding: 14px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.install p { margin: 0; flex: 1 1 220px; min-width: 0; color: var(--fg); font-size: .95rem; }
+.install button { appearance: none; border: 0; cursor: pointer; background: var(--royal); color: #fff; border-radius: 999px; height: 44px; padding: 0 20px; font-weight: 600; font-family: inherit; font-size: 1rem; }
+</style>
+
+<style>body{margin:0;font-size:14px}</style>
+</head>
+<body>
+<div class="app" dir="rtl" lang="ar">
+  <section class="console" id="console" aria-label="مشغّل الإذاعة">
+    <div>
+      <div class="brand">راديو رويال</div>
+      <div class="now" id="now">اختر إذاعة</div>
+      <div class="status" id="status" role="status" aria-live="polite">اضغط على اسم أي إذاعة لبدء الاستماع</div>
+    </div>
+    <div class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="controls">
+      <button class="ctl" id="toggle" type="button" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true" id="toggleIcon"><path d="M8 5v14l11-7z"/></svg>
+        <span id="toggleText">تشغيل</span>
+      </button>
+      <button class="ctl ghost" id="stop" type="button" disabled>إيقاف</button>
+      <div class="vol">
+        <label for="vol">الصوت</label>
+        <input id="vol" type="range" min="0" max="100" value="80">
+      </div>
+    </div>
+  </section>
+
+  <div class="install" id="install" hidden>
+    <p id="installMsg"></p>
+    <button type="button" id="installBtn" hidden>تثبيت التطبيق</button>
+  </div>
+
+  <div id="groups"></div>
+  <p class="note">بعض الإذاعات قد تتوقف أحياناً من جهة مزوّد البث. إذا لم تعمل إذاعة، جرّب غيرها أو أعد الضغط عليها.</p>
+</div>
+
+<script>
+(function () {
+  var PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
+  var PAUSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
+  var LINK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3h7v7h-2V6.4l-9.3 9.3-1.4-1.4L17.6 5H14zM5 5h6v2H7v10h10v-4h2v6H5z"/></svg>';
+
+  var groups = [
+    { title: "إذاعات مغربية", items: [
+      { ar: "ميد راديو", lt: "Med Radio", url: "https://medradio.ice.infomaniak.ch/medradio-128.mp3" },
+      { ar: "هيت راديو", lt: "Hit Radio Maroc", url: "https://hitradio-maroc.ice.infomaniak.ch/hitradio-maroc-128.mp3" },
+      { ar: "مدينة إف إم", lt: "Medina FM", url: "https://medinafm.ice.infomaniak.ch/medinafm-64.mp3" },
+      { ar: "أصوات", lt: "Aswat", url: "https://aswat.ice.infomaniak.ch/aswat-high.mp3" },
+      { ar: "راديو مارس", lt: "Radio Mars", url: "https://radiomars.ice.infomaniak.ch/radiomars-128.mp3" },
+      { ar: "راديو إم إف إم", lt: "Radio MFM", url: "https://a5.asurahosting.com:7980/radio.mp3" },
+      { ar: "راديو بلس", lt: "Radio Plus", url: "https://stream.radio.co/s8cc7a5da4/listen", site: "https://radiolive.ma/ar/station/radio-plus" }
+    ]},
+    { title: "إذاعات فرنسية ودولية", items: [
+      { ar: "فرانس إنتر", lt: "France Inter", url: "https://direct.franceinter.fr/live/franceinter-midfi.mp3" },
+      { ar: "فرانس ميزيك", lt: "France Musique", url: "https://direct.francemusique.fr/live/francemusique-midfi.mp3" },
+      { ar: "فرانس إنفو", lt: "franceinfo", url: "https://direct.franceinfo.fr/live/franceinfo-midfi.mp3" },
+      { ar: "فرانس كولتير", lt: "France Culture", url: "https://direct.franceculture.fr/live/franceculture-midfi.mp3" },
+      { ar: "مونت كارلو الدولية", lt: "Monte Carlo Doualiya", url: "https://montecarlodoualiya128k.ice.infomaniak.ch/mc-doualiya.mp3" },
+      { ar: "إذاعة فرنسا الدولية", lt: "RFI Monde", url: "https://rfimonde64k.ice.infomaniak.ch/rfimonde-64.mp3" }
+    ]},
+    { title: "محطات أخرى", items: [
+      { ar: "أتلانتيك سونيك", lt: "Atlantic Sonic", url: "https://atlantic-sonic.nindohost.net:9300/stream" },
+      { ar: "زينو إف إم", lt: "Zeno FM", url: "https://stream.zeno.fm/na3vpvn10qruv" },
+      { ar: "نجوم إف إم", lt: "Nogoum FM", url: "https://audio.nrpstream.com/listen/nogoumfm/radio.mp3" },
+      { ar: "برونتو إف إم", lt: "Pronto FM", url: "https://eu1.fastcast4u.com/proxy/prontofm?mp=/1" },
+      { ar: "زينو إف إم 2", lt: "Zeno FM 2", url: "https://node-25.zeno.fm/efx5psd00qruv?rj-ttl=5&rj-tok=AAABgMIcwYoA73VvxPRp4sBLNw" }
+    ]},
+    { title: "موسيقى الاسترخاء", items: [
+      { ar: "مون رايز راديو", lt: "Moonrise Radio", url: "https://radio.sunrise85fm.ro/listen/moonrise_radio/radio.mp3" },
+      { ar: "بوردز أوف كندا", lt: "Boards of Canada 24/7", url: "https://radio.geogaddi.org/listen/boards_of_canada_247/live.mp3" },
+      { ar: "راديو كافيه", lt: "Radio Cafe", url: "https://dirxiph.amgradio.ru/Cafe?dirxiph" },
+      { ar: "تشيل هاوس", lt: "Chill House", url: "https://radiospromo.com/listen/tracksaudio.com_-_chill_house_music/radio.mp3" },
+      { ar: "أصوات الطبيعة", lt: "Zvuki Prirody · Nature Sounds", url: "https://dirxiph.amgradio.ru/Zvuki?dirxiph" },
+      { ar: "تشيلا إف إم", lt: "Chilla FM", url: "https://dirxiph.amgradio.ru/ChillaFM?dirxiph" },
+      { ar: "تشيل أوت لاونج", lt: "Chill Out Lounge", url: "https://radiospromo.com/listen/tracksaudio.com_-_chill_out_lounge_music/radio.mp3" },
+      { ar: "كالم فلو", lt: "CalmFlow", url: "https://stream.24dubstep.pl/listen/chillstep/mp3_best" }
+    ]}
+  ];
+
+  var consoleEl = document.getElementById("console");
+  var nowEl = document.getElementById("now");
+  var statusEl = document.getElementById("status");
+  var toggle = document.getElementById("toggle");
+  var toggleIcon = document.getElementById("toggleIcon");
+  var toggleText = document.getElementById("toggleText");
+  var stopBtn = document.getElementById("stop");
+  var vol = document.getElementById("vol");
+  var root = document.getElementById("groups");
+
+  var audio = new Audio();
+  audio.preload = "none";
+  audio.volume = 0.8;
+  var current = null;   // station object
+  var buttons = [];     // {st, el}
+
+  function esc(s) { var d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+
+  groups.forEach(function (g) {
+    var sec = document.createElement("section");
+    sec.className = "group";
+    sec.innerHTML = "<h2>" + esc(g.title) + "</h2>";
+    var grid = document.createElement("div");
+    grid.className = "grid";
+    g.items.forEach(function (st) {
+      var el;
+      var inner = '<span class="nm"><span class="ar">' + esc(st.ar) + '</span><span class="lt">' + esc(st.lt) + '</span></span>';
+      if (st.page) {
+        el = document.createElement("a");
+        el.href = st.url; el.target = "_blank"; el.rel = "noopener noreferrer";
+        el.innerHTML = inner + '<span class="ic" title="يفتح في صفحة جديدة">' + LINK + '</span>';
+      } else {
+        el = document.createElement("button");
+        el.type = "button";
+        el.setAttribute("aria-pressed", "false");
+        el.innerHTML = inner + '<span class="ic">' + PLAY + '</span>';
+        el.addEventListener("click", function () { choose(st); });
+        buttons.push({ st: st, el: el });
+      }
+      el.className = "st";
+      grid.appendChild(el);
+    });
+    sec.appendChild(grid);
+    root.appendChild(sec);
+  });
+
+  function setStatus(html) { statusEl.innerHTML = html; }
+
+  function refresh(state) {
+    buttons.forEach(function (b) {
+      var on = current === b.st;
+      b.el.setAttribute("aria-pressed", on ? "true" : "false");
+      b.el.querySelector(".ic").innerHTML = (on && state === "playing") ? PAUSE : PLAY;
+    });
+    consoleEl.classList.toggle("playing", state === "playing");
+    toggle.disabled = stopBtn.disabled = !current;
+    var playing = state === "playing" || state === "loading";
+    toggleIcon.innerHTML = playing ? '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>' : '<path d="M8 5v14l11-7z"/>';
+    toggleText.textContent = playing ? "إيقاف مؤقت" : "تشغيل";
+  }
+
+  function start() {
+    setStatus("جارٍ الاتصال بالبث…");
+    refresh("loading");
+    var p = audio.play();
+    if (p && p.catch) p.catch(function () { fail(); });
+  }
+
+  function fail() {
+    refresh("error");
+    var link = current ? ' <a href="' + esc(current.site || current.url) + '" target="_blank" rel="noopener noreferrer">افتح الإذاعة في صفحة جديدة</a>' : "";
+    setStatus("تعذر تشغيل هذا البث الآن." + link);
+  }
+
+  function choose(st) {
+    if (current === st) {
+      if (audio.paused) start(); else audio.pause();
+      return;
+    }
+    current = st;
+    nowEl.textContent = st.ar;
+    audio.src = st.url;
+    start();
+  }
+
+  audio.addEventListener("playing", function () { setStatus("يعمل الآن · " + esc(current.lt)); refresh("playing"); });
+  audio.addEventListener("waiting", function () { if (current) { setStatus("جارٍ التحميل…"); refresh("loading"); } });
+  audio.addEventListener("pause", function () { if (current && audio.src) { setStatus("متوقف مؤقتاً"); refresh("paused"); } });
+  audio.addEventListener("error", function () { if (current) fail(); });
+
+  function setMedia() {
+    if (!("mediaSession" in navigator) || !current) return;
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: current.ar, artist: "راديو رويال",
+        artwork: [{ src: "icon-512.png", sizes: "512x512", type: "image/png" }]
+      });
+      navigator.mediaSession.setActionHandler("play", function () { if (current) start(); });
+      navigator.mediaSession.setActionHandler("pause", function () { audio.pause(); });
+      navigator.mediaSession.setActionHandler("stop", function () { stopBtn.click(); });
+    } catch (e) {}
+  }
+  audio.addEventListener("playing", setMedia);
+
+  toggle.addEventListener("click", function () {
+    if (!current) return;
+    if (audio.paused) start(); else audio.pause();
+  });
+  stopBtn.addEventListener("click", function () {
+    if (!current) return;
+    audio.pause();
+    audio.removeAttribute("src");
+    audio.load();
+    current = null;
+    nowEl.textContent = "اختر إذاعة";
+    setStatus("اضغط على اسم أي إذاعة لبدء الاستماع");
+    refresh("idle");
+  });
+  vol.addEventListener("input", function () { audio.volume = vol.value / 100; });
+})();
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+}
+</script>
+<script>
+(function () {
+  var box = document.getElementById("install"), msg = document.getElementById("installMsg"), btn = document.getElementById("installBtn");
+  var standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+  if (standalone) return;
+  var deferred = null;
+  window.addEventListener("beforeinstallprompt", function (e) {
+    e.preventDefault(); deferred = e;
+    msg.textContent = "ثبّت راديو رويال على شاشة هاتفك ليفتح كتطبيق.";
+    btn.hidden = false; box.hidden = false;
+  });
+  btn.addEventListener("click", function () {
+    if (!deferred) return;
+    deferred.prompt();
+    deferred.userChoice.then(function () { deferred = null; box.hidden = true; });
+  });
+  window.addEventListener("appinstalled", function () { box.hidden = true; });
+  setTimeout(function () {
+    if (deferred) return;
+    var secure = location.protocol === "https:" || location.hostname === "localhost";
+    msg.textContent = secure
+      ? "لتثبيت التطبيق: افتح قائمة Chrome (ثلاث نقاط) ثم اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية»."
+      : "التثبيت يحتاج رابط https. ارفع المجلد على استضافة مثل Netlify ثم افتح رابطها في Chrome.";
+    box.hidden = false;
+  }, 3000);
+})();
+</script>
+</body>
+</html>
