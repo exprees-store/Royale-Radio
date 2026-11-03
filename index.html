@@ -7,6 +7,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.17/hls.min.js"></script>
 <title>راديو رويال</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@500;700&family=Readex+Pro:wght@300;400;600&display=swap">
 <style>
@@ -185,6 +186,10 @@ button, a.st { font-family: inherit; }
       { ar: "راديو إم إف إم", lt: "Radio MFM", url: "https://a5.asurahosting.com:7980/radio.mp3" },
       { ar: "راديو بلس", lt: "Radio Plus", url: "https://stream.radio.co/s8cc7a5da4/listen", site: "https://radiolive.ma/ar/station/radio-plus" }
     ]},
+    { title: "إذاعات عربية", items: [
+      { ar: "العربية إف إم", lt: "Al Arabiya FM", url: "https://fm.alarabiya.net/fm/myStream/playlist.m3u8" },
+      { ar: "بي بي سي عربي", lt: "BBC Arabic", url: "https://as-hls-ww-live.akamaized.net/pool_27085945/live/ww/bbc_arabic_radio/bbc_arabic_radio.isml/bbc_arabic_radio-audio%3d320000.norewind.m3u8" }
+    ]},
     { title: "إذاعات فرنسية ودولية", items: [
       { ar: "فرانس إنتر", lt: "France Inter", url: "https://direct.franceinter.fr/live/franceinter-midfi.mp3" },
       { ar: "فرانس ميزيك", lt: "France Musique", url: "https://direct.francemusique.fr/live/francemusique-midfi.mp3" },
@@ -286,6 +291,20 @@ button, a.st { font-family: inherit; }
     setStatus("تعذر تشغيل هذا البث الآن." + link);
   }
 
+  var hls = null;
+  function attach(url) {
+    if (hls) { hls.destroy(); hls = null; }
+    var isHls = /\.m3u8(\?|$)/.test(url);
+    if (isHls && !audio.canPlayType("application/vnd.apple.mpegurl") && window.Hls && window.Hls.isSupported()) {
+      hls = new window.Hls();
+      hls.loadSource(url);
+      hls.attachMedia(audio);
+      hls.on(window.Hls.Events.ERROR, function (e, d) { if (d && d.fatal) fail(); });
+    } else {
+      audio.src = url;
+    }
+  }
+
   function choose(st) {
     if (current === st) {
       if (audio.paused) start(); else audio.pause();
@@ -293,7 +312,7 @@ button, a.st { font-family: inherit; }
     }
     current = st;
     nowEl.textContent = st.ar;
-    audio.src = st.url;
+    attach(st.url);
     start();
   }
 
@@ -323,6 +342,7 @@ button, a.st { font-family: inherit; }
   stopBtn.addEventListener("click", function () {
     if (!current) return;
     audio.pause();
+    if (hls) { hls.destroy(); hls = null; }
     audio.removeAttribute("src");
     audio.load();
     current = null;
